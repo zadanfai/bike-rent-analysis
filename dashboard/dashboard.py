@@ -3,7 +3,6 @@ import pandas as pd
 import streamlit as st
 import seaborn as sns
 import matplotlib.pyplot as plt
-from babel.numbers import format_currency
 sns.set(style='dark')
 
 st.set_page_config(page_title="Bike Rental Analysis Dashboard", layout="wide")
