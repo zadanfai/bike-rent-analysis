@@ -43,6 +43,18 @@ def create_sum_order_casualrent_df(df):
     sum_order_casualrent_df = df.groupby(['season', 'dteday']).casual.sum().sort_values(ascending=False).reset_index()
     return sum_order_casualrent_df
 
+def create_outliers_casual_df(df):
+
+    q1 = np.quantile(df['casual'], 0.25)
+    q3 = np.quantile(df['casual'], 0.75)
+    iqr = q3 - q1
+    batas_bawah = q1 - (1.5 * iqr)
+    batas_atas = q3 + (1.5 * iqr)
+
+    df2 = df.copy()
+    df2['is_outlier'] = (df['casual'] < batas_bawah) | (df['casual'] > batas_atas)
+    outliers_df = df2[df2['is_outlier']]
+    return outliers_df
 
 with st.sidebar:
 
@@ -65,6 +77,7 @@ with st.sidebar:
 
     if years_select == 'All Years':
 
+        outliers_df = create_outliers_casual_df(main_df)
         weathersit_rent_df = create_weathersit_allrent_df(main_df)
         sum_order_allrent_df = create_sum_order_allrent_df(main_df)
         sum_order_casualrent_df = create_sum_order_casualrent_df(main_df)
@@ -75,6 +88,7 @@ with st.sidebar:
         weathersit_rent_df = create_weathersit_allrent_df(filtered_df)
         sum_order_allrent_df = create_sum_order_allrent_df(filtered_df)
         sum_order_casualrent_df = create_sum_order_casualrent_df(filtered_df)
+        outliers_df = create_outliers_casual_df(filtered_df)
 
 
 col1, col2 = st.columns(2)
@@ -107,6 +121,45 @@ plt.ylabel('Rent Frequency')
 
 st.pyplot(fig)
 
+################################################################
+
+st.subheader("Casual Bike that Deciate Greatly (Outliers) Frequency by Weather Situation")
+
+visual1 = outliers_df.groupby(by='weathersit').agg({
+    "casual": 'count'
+})
+
+fig, ax = plt.subplots(figsize=(12, 6))
+sns.barplot(data=visual1, x='weathersit', y='casual', palette='viridis')
+ax.set_title('Casual Bike Outliers Frequency by weather situation')
+ax.set_xlabel('Weather Situation')
+st.pyplot(fig)
+
+st.text(
+    """
+    1 : Clear, Few clouds, Partly cloud, Partly Cloudy
+    2 : Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist
+    3 : Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds
+    4 : Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog
+    """
+)
+
+#######################################################################
+
+st.subheader("Casual Bike that Deciate Greatly (Outliers) Frequency by Season")
+
+visual2 = outliers_df.groupby(by='season').agg({
+    "casual": 'count'
+})
+
+fig, ax = plt.subplots(figsize=(12, 6))
+sns.barplot(data=visual2, x='season', y='casual', palette='viridis')
+ax.set_title('Casual Bike Outliers Frequency by Season')
+ax.set_xlabel('Season')
+st.pyplot(fig)
+
+################################################################
+
 st.markdown("---")
 
 st.header("Bike Rental by Season Condition")
@@ -135,3 +188,21 @@ ax[1].tick_params(axis='y', labelsize=35)
 ax[1].tick_params(axis='x', labelsize=30)
 
 st.pyplot(fig)
+
+################################################################
+
+fig, ax = plt.subplots(figsize=(12, 6))
+sns.boxplot(data=weathersit_rent_df, x='weathersit', y='total_rent', palette='coolwarm')
+ax.set_title('Distribution of Bike Rentals by Weather Situation')
+ax.set_xlabel('Weather Situation')
+ax.grid(axis='y')
+st.pyplot(fig)
+
+st.text(
+    """
+    1 : Clear, Few clouds, Partly cloud, Partly Cloudy
+    2 : Mist + Cloudy, Mist + Broken clouds, Mist + Few clouds, Mist
+    3 : Light Snow, Light Rain + Thunderstorm + Scattered clouds, Light Rain + Scattered clouds
+    4 : Heavy Rain + Ice Pallets + Thunderstorm + Mist, Snow + Fog
+    """
+)
